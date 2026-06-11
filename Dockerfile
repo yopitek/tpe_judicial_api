@@ -2,7 +2,7 @@
 # Uses Playwright + Chromium for headless scraping of 司法院
 FROM python:3.12-slim
 
-# System deps for Chromium
+# System deps for Chromium (playwright install-deps equivalent)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget gnupg ca-certificates \
     libglib2.0-0 libnss3 libnspr4 libdbus-1-3 \
@@ -16,10 +16,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright Chromium browser
-RUN playwright install chromium
+# Install Playwright Chromium browser + system deps
+RUN playwright install chromium --with-deps
 
 COPY . .
 
-EXPOSE 8080
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Railway injects $PORT at runtime — do NOT hardcode port here
+# The start command in railway.json uses $PORT
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
